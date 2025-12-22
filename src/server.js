@@ -199,12 +199,16 @@ function formatDuration(seconds) {
   return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-// Get athlete's access token
-  return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-}
-
 // Health check endpoint
 app.get('/health', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Start server
+app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Webhook URL: ${process.env.WEBHOOK_CALLBACK_URL || `http://localhost:${PORT}/webhook`}`);
 });
