@@ -1,0 +1,20 @@
+{
+  "name": "strava-sheets-sync",
+  "version": "1.0.0",
+  "description": "Automatically sync Strava activities to Google Sheets",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "keywords": ["strava", "google-sheets", "webhook"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "dotenv": "^16.3.1",
+    "googleapis": "^128.0.0",
+    "node-fetch": "^3.3.2"
+  }
+}

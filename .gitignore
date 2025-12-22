@@ -1,0 +1,9 @@
+node_modules/
+.env
+google-credentials.json
+*.log
+.DS_Store
+ngrok_recovery_codes.txt
+icon.png
+image.png
+test-webhook.js
