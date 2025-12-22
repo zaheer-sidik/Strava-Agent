@@ -10,8 +10,17 @@ const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_ID;
 let sheets;
 
 try {
-  // Load service account credentials
-  const credentials = JSON.parse(readFileSync('./google-credentials.json', 'utf8'));
+  // Load service account credentials from environment variable or file
+  let credentials;
+  
+  if (process.env.GOOGLE_CREDENTIALS_BASE64) {
+    // For production: decode from base64 environment variable
+    const credentialsJson = Buffer.from(process.env.GOOGLE_CREDENTIALS_BASE64, 'base64').toString('utf8');
+    credentials = JSON.parse(credentialsJson);
+  } else {
+    // For local development: read from file
+    credentials = JSON.parse(readFileSync('./google-credentials.json', 'utf8'));
+  }
   
   const auth = new google.auth.GoogleAuth({
     credentials: credentials,
@@ -21,7 +30,7 @@ try {
   sheets = google.sheets({ version: 'v4', auth });
 } catch (error) {
   console.error('Error loading Google credentials:', error.message);
-  console.error('Make sure google-credentials.json exists in the project root');
+  console.error('Make sure google-credentials.json exists or GOOGLE_CREDENTIALS_BASE64 is set');
 }
 
 /**
