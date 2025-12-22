@@ -152,7 +152,6 @@ async function handleActivityUpdate(activityId, athleteId) {
 
   const accessToken = await getAthleteAccessToken(athleteId);
 
-  if (!accessToken) {
 // Handle activity updates (when description or other details change)
 async function handleActivityUpdate(activityId, athleteId) {
   console.log(`Processing activity update ${activityId} for athlete ${athleteId}`);
@@ -162,8 +161,10 @@ async function handleActivityUpdate(activityId, athleteId) {
 
   // Fetch updated activity details from Strava API
   const response = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
-    return;
-  }
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  });
 
   const activity = await response.json();
   
