@@ -1,7 +1,7 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
-import { appendToSheet } from './sheets.js';
+import { appendToSheet, updateSheetRow } from './sheets.js';
 
 dotenv.config();
 
@@ -37,11 +37,19 @@ app.post('/webhook', async (req, res) => {
   res.sendStatus(200);
 
   // Process the event
-  if (event.object_type === 'activity' && event.aspect_type === 'create') {
-    try {
-      await handleNewActivity(event.object_id, event.owner_id);
-    } catch (error) {
-      console.error('Error handling activity:', error);
+  if (event.object_type === 'activity') {
+    if (event.aspect_type === 'create') {
+      try {
+        await handleNewActivity(event.object_id, event.owner_id);
+      } catch (error) {
+        console.error('Error handling activity:', error);
+      }
+    } else if (event.aspect_type === 'update') {
+      try {
+        await handleActivityUpdate(event.object_id, event.owner_id);
+      } catch (error) {
+        console.error('Error handling activity update:', error);
+      }
     }
   }
 });
@@ -92,9 +100,57 @@ async function handleNewActivity(activityId, athleteId) {
   const distance = activity.distance ? (activity.distance / 1000).toFixed(2) + ' km' : 'N/A';
   const duration = activity.moving_time ? formatDuration(activity.moving_time) : 'N/A';
 
-  // Add to Google Sheets
-  await appendToSheet([date, time, title, notes, type, distance, duration]);
+  // Add to Google Sheets with activity ID for future updates
+  await appendToSheet([date, time, title, notes, type, distance, duration, activityId.toString()]);
   console.log(`Activity "${title}" added to Google Sheets`);
+}
+
+// Handle activity updates (when description or other details change)
+async function handleActivityUpdate(activityId, athleteId) {
+  console.log(`Processing activity update ${activityId} for athlete ${athleteId}`);
+
+  const accessToken = await getAthleteAccessToken(athleteId);
+
+  if (!accessToken) {
+    console.error('No access token found for athlete');
+    return;
+  }
+
+  // Fetch updated activity details from Strava API
+  const response = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`
+    }
+  });
+
+  if (!response.ok) {
+    console.error('Failed to fetch activity:', response.statusText);
+    return;
+  }
+
+  const activity = await response.json();
+  
+  // Extract and format updated data
+  const activityDate = new Date(activity.start_date);
+  const date = activityDate.toLocaleDateString('en-GB', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).replace(/(\w+) (\d+)\/(\d+)\/(\d+)/, '$1 $2/$3/$4');
+  const time = activityDate.toLocaleTimeString('en-GB', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+  const title = activity.name || 'Untitled Activity';
+  const notes = activity.description || '';
+  const type = activity.type || '';
+  const distance = activity.distance ? (activity.distance / 1000).toFixed(2) + ' km' : 'N/A';
+  const duration = activity.moving_time ? formatDuration(activity.moving_time) : 'N/A';
+
+  // Update the existing row in Google Sheets
+  await updateSheetRow(activityId.toString(), [date, time, title, notes, type, distance, duration, activityId.toString()]);
+  console.log(`Activity "${title}" updated in Google Sheets`);
 }
 
 // Format duration from seconds to HH:MM:SS
