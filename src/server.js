@@ -13,6 +13,54 @@ const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
 const STRAVA_VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN;
 
+// Token management
+let currentAccessToken = process.env.STRAVA_ACCESS_TOKEN;
+let currentRefreshToken = process.env.STRAVA_REFRESH_TOKEN;
+let tokenExpiresAt = Date.now() + (6 * 60 * 60 * 1000); // 6 hours from now
+
+// Refresh access token if expired
+async function getValidAccessToken() {
+  // If token is still valid (with 5 min buffer), return it
+  if (Date.now() < tokenExpiresAt - (5 * 60 * 1000)) {
+    return currentAccessToken;
+  }
+
+  console.log('Access token expired, refreshing...');
+
+  try {
+    const response = await fetch('https://www.strava.com/oauth/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: STRAVA_CLIENT_ID,
+        client_secret: STRAVA_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+        refresh_token: currentRefreshToken,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Token refresh failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    
+    // Update tokens in memory
+    currentAccessToken = data.access_token;
+    currentRefreshToken = data.refresh_token;
+    tokenExpiresAt = data.expires_at * 1000; // Convert to milliseconds
+
+    console.log('Access token refreshed successfully, expires at:', new Date(tokenExpiresAt).toISOString());
+    
+    return currentAccessToken;
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    throw error;
+  }
+}
+
 // Webhook validation endpoint (GET request from Strava)
 app.get('/webhook', (req, res) => {
   const mode = req.query['hub.mode'];
@@ -58,15 +106,8 @@ app.post('/webhook', async (req, res) => {
 async function handleNewActivity(activityId, athleteId) {
   console.log(`Processing activity ${activityId} for athlete ${athleteId}`);
 
-  // Get athlete's access token (you'll need to store this after OAuth)
-  // For simplicity, this example assumes you have a single athlete
-  // In production, you'd store tokens in a database per athlete
-  const accessToken = await getAthleteAccessToken(athleteId);
-
-  if (!accessToken) {
-    console.error('No access token found for athlete');
-    return;
-  }
+  // Get a valid access token (will auto-refresh if expired)
+  const accessToken = await getValidAccessToken();
 
   // Fetch activity details from Strava API
   const response = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
@@ -112,19 +153,15 @@ async function handleActivityUpdate(activityId, athleteId) {
   const accessToken = await getAthleteAccessToken(athleteId);
 
   if (!accessToken) {
-    console.error('No access token found for athlete');
-    return;
-  }
+// Handle activity updates (when description or other details change)
+async function handleActivityUpdate(activityId, athleteId) {
+  console.log(`Processing activity update ${activityId} for athlete ${athleteId}`);
+
+  // Get a valid access token (will auto-refresh if expired)
+  const accessToken = await getValidAccessToken();
 
   // Fetch updated activity details from Strava API
   const response = await fetch(`https://www.strava.com/api/v3/activities/${activityId}`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`
-    }
-  });
-
-  if (!response.ok) {
-    console.error('Failed to fetch activity:', response.statusText);
     return;
   }
 
@@ -162,19 +199,11 @@ function formatDuration(seconds) {
 }
 
 // Get athlete's access token
-// In production, store tokens in a database and refresh when needed
-async function getAthleteAccessToken(athleteId) {
-  // For now, return from environment variable
-  // You'll need to implement OAuth flow and token storage
-  return process.env.STRAVA_ACCESS_TOKEN;
+  return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Webhook URL: ${process.env.WEBHOOK_CALLBACK_URL || `http://localhost:${PORT}/webhook`}`);
 });
