@@ -150,12 +150,6 @@ async function handleNewActivity(activityId, athleteId) {
 async function handleActivityUpdate(activityId, athleteId) {
   console.log(`Processing activity update ${activityId} for athlete ${athleteId}`);
 
-  const accessToken = await getAthleteAccessToken(athleteId);
-
-// Handle activity updates (when description or other details change)
-async function handleActivityUpdate(activityId, athleteId) {
-  console.log(`Processing activity update ${activityId} for athlete ${athleteId}`);
-
   // Get a valid access token (will auto-refresh if expired)
   const accessToken = await getValidAccessToken();
 
@@ -210,5 +204,6 @@ app.get('/health', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`Webhook URL: ${process.env.WEBHOOK_CALLBACK_URL || `http://localhost:${PORT}/webhook`}`);
+  const webhookUrl = process.env.WEBHOOK_CALLBACK_URL || `http://localhost:${PORT}/webhook`;
+  console.log(`Webhook URL: ${webhookUrl}`);
 });
