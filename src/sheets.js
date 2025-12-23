@@ -34,7 +34,7 @@ try {
 }
 
 /**
- * Append a row to the Google Sheet
+ * Append a row to the Google Sheet (inserts at row 2, right after headers)
  * @param {Array} values - Array of values to append [date, time, title, notes, type, distance, duration, activityId]
  */
 export async function appendToSheet(values) {
@@ -46,17 +46,37 @@ export async function appendToSheet(values) {
     // First, ensure the sheet has headers if it's empty
     await ensureHeaders();
 
-    // Append the new row
-    const response = await sheets.spreadsheets.values.append({
+    // Insert the new row at row 2 (right after headers)
+    // This pushes existing data down
+    await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Sheet1!A:H', // Extended to include Activity ID column
+      requestBody: {
+        requests: [
+          {
+            insertDimension: {
+              range: {
+                sheetId: 0,
+                dimension: 'ROWS',
+                startIndex: 1,
+                endIndex: 2
+              }
+            }
+          }
+        ]
+      }
+    });
+
+    // Now add the data to row 2
+    const response = await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'Sheet1!A2:H2',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [values],
       },
     });
 
-    console.log(`Added row to Google Sheets: ${response.data.updates.updatedRows} row(s) updated`);
+    console.log(`Added row to Google Sheets: ${response.data.updatedRows} row(s) updated`);
     return response.data;
   } catch (error) {
     console.error('Error appending to sheet:', error.message);
