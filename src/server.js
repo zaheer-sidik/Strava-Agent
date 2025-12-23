@@ -16,7 +16,7 @@ const STRAVA_VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN;
 // Token management
 let currentAccessToken = process.env.STRAVA_ACCESS_TOKEN;
 let currentRefreshToken = process.env.STRAVA_REFRESH_TOKEN;
-let tokenExpiresAt = Date.now() + (6 * 60 * 60 * 1000); // 6 hours from now
+let tokenExpiresAt = 0; // Set to 0 to force refresh on first use
 
 // Refresh access token if expired
 async function getValidAccessToken() {
@@ -25,7 +25,7 @@ async function getValidAccessToken() {
     return currentAccessToken;
   }
 
-  console.log('Access token expired, refreshing...');
+  console.log('Access token expired or not initialized, refreshing...');
 
   try {
     const response = await fetch('https://www.strava.com/oauth/token', {
