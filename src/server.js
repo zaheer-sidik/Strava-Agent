@@ -160,7 +160,13 @@ async function handleActivityUpdate(activityId, athleteId) {
     }
   });
 
+  if (!response.ok) {
+    console.error('Failed to fetch activity:', response.statusText);
+    return;
+  }
+
   const activity = await response.json();
+  console.log('Activity data from Strava:', JSON.stringify(activity, null, 2));
   
   // Extract and format updated data
   const activityDate = new Date(activity.start_date);
@@ -179,6 +185,8 @@ async function handleActivityUpdate(activityId, athleteId) {
   const type = activity.type || '';
   const distance = activity.distance ? (activity.distance / 1000).toFixed(2) + ' km' : 'N/A';
   const duration = activity.moving_time ? formatDuration(activity.moving_time) : 'N/A';
+
+  console.log(`Updating activity with: date=${date}, time=${time}, title=${title}, notes=${notes}`);
 
   // Update the existing row in Google Sheets
   await updateSheetRow(activityId.toString(), [date, time, title, notes, type, distance, duration, activityId.toString()]);
