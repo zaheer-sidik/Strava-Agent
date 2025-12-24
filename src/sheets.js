@@ -34,7 +34,7 @@ try {
 }
 
 /**
- * Append a row to the Google Sheet (inserts at row 2, right after headers)
+ * Append a row to the Google Sheet (inserts at row 10, right after dashboard)
  * @param {Array} values - Array of values to append [date, time, title, notes, type, distance, duration, activityId]
  */
 export async function appendToSheet(values) {
@@ -43,10 +43,10 @@ export async function appendToSheet(values) {
   }
 
   try {
-    // First, ensure the sheet has headers if it's empty
-    await ensureHeaders();
+    // First, ensure the sheet structure exists
+    await ensureDashboard();
 
-    // Insert the new row at row 2 (right after headers)
+    // Insert the new row at row 10 (right after dashboard and headers)
     // This pushes existing data down
     await sheets.spreadsheets.batchUpdate({
       spreadsheetId: SPREADSHEET_ID,
@@ -57,8 +57,8 @@ export async function appendToSheet(values) {
               range: {
                 sheetId: 0,
                 dimension: 'ROWS',
-                startIndex: 1,
-                endIndex: 2
+                startIndex: 9,
+                endIndex: 10
               }
             }
           }
@@ -66,10 +66,10 @@ export async function appendToSheet(values) {
       }
     });
 
-    // Now add the data to row 2
+    // Now add the data to row 10
     const response = await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Sheet1!A2:H2',
+      range: 'Sheet1!A10:H10',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [values],
@@ -77,6 +77,10 @@ export async function appendToSheet(values) {
     });
 
     console.log(`Added row to Google Sheets: ${response.data.updatedRows} row(s) updated`);
+    
+    // Update dashboard stats after adding new activity
+    await updateDashboard();
+    
     return response.data;
   } catch (error) {
     console.error('Error appending to sheet:', error.message);
@@ -95,19 +99,19 @@ export async function updateSheetRow(activityId, values) {
   }
 
   try {
-    // Get all data from the sheet
+    // Get all data from the sheet (starting from row 9 to skip dashboard)
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Sheet1!A:H',
+      range: 'Sheet1!A9:H',
     });
 
     const rows = response.data.values || [];
     
     // Find the row index with matching activity ID (column H, index 7)
     let rowIndex = -1;
-    for (let i = 1; i < rows.length; i++) { // Start at 1 to skip header
+    for (let i = 1; i < rows.length; i++) { // Start at 1 to skip activity header (row 9)
       if (rows[i][7] === activityId) { // Column H (Activity ID)
-        rowIndex = i + 1; // +1 because sheets are 1-indexed
+        rowIndex = i + 9; // +9 because we started from row 9
         break;
       }
     }
@@ -129,6 +133,10 @@ export async function updateSheetRow(activityId, values) {
     });
 
     console.log(`Updated row ${rowIndex} in Google Sheets: ${updateResponse.data.updatedRows} row(s) updated`);
+    
+    // Update dashboard stats after updating activity
+    await updateDashboard();
+    
     return updateResponse.data;
   } catch (error) {
     console.error('Error updating sheet row:', error.message);
@@ -137,30 +145,236 @@ export async function updateSheetRow(activityId, values) {
 }
 
 /**
- * Ensure the sheet has proper headers
+ * Create and format the dashboard at the top of the sheet
  */
-async function ensureHeaders() {
+async function ensureDashboard() {
   try {
-    // Check if first row has data
+    // Check if dashboard exists
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: 'Sheet1!A1:H1',
     });
 
-    // If no data or empty, add headers
+    // If no data, create the full dashboard structure
     if (!response.data.values || response.data.values.length === 0) {
+      // Create dashboard and headers
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: 'Sheet1!A1:H1',
+        range: 'Sheet1!A1:H9',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
-          values: [['Date', 'Time', 'Activity Title', 'Notes', 'Type', 'Distance', 'Duration', 'Activity ID']],
+          values: [
+            ['STRAVA DASHBOARD', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['Last Activity:', '=IF(COUNTA(A10:A)>0,A10,\"No activities yet\")', 'Activities This Week:', '=COUNTIFS(A10:A,">="&TODAY()-WEEKDAY(TODAY(),2)+1)', 'Activities This Year:', '=COUNTIFS(A10:A,">="&DATE(YEAR(TODAY()),1,1))', '', ''],
+            ['Total Distance (This Week):', '=SUMIF(A10:A,">="&TODAY()-WEEKDAY(TODAY(),2)+1,F10:F)', 'Total Distance (This Year):', '=SUMIF(A10:A,">="&DATE(YEAR(TODAY()),1,1),F10:F)', 'Total Activities:', '=COUNTA(A10:A)', '', ''],
+            ['Races This Year:', '=SUMPRODUCT((A10:A>=DATE(YEAR(TODAY()),1,1))*(ISNUMBER(SEARCH("race",LOWER(C10:C))))*1)', 'Average Distance:', '=IF(COUNTA(F10:F)>0,AVERAGE(F10:F)&\" km\",\"N/A\")', 'Most Common Activity:', '=IF(COUNTA(E10:E)>0,INDEX(E10:E,MODE(MATCH(E10:E,E10:E,0))),"N/A")', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', ''],
+            ['Date', 'Time', 'Activity Title', 'Notes', 'Type', 'Distance', 'Duration', 'Activity ID'],
+          ],
         },
       });
-      console.log('Headers added to Google Sheets');
+
+      // Apply formatting
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: {
+          requests: [
+            // Title row formatting (row 1)
+            {
+              repeatCell: {
+                range: {
+                  sheetId: 0,
+                  startRowIndex: 0,
+                  endRowIndex: 1,
+                  startColumnIndex: 0,
+                  endColumnIndex: 8
+                },
+                cell: {
+                  userEnteredFormat: {
+                    backgroundColor: { red: 0.2, green: 0.4, blue: 0.8 },
+                    textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, fontSize: 16, bold: true },
+                    horizontalAlignment: 'CENTER',
+                    verticalAlignment: 'MIDDLE'
+                  }
+                },
+                fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment)'
+              }
+            },
+            // Merge title cells
+            {
+              mergeCells: {
+                range: {
+                  sheetId: 0,
+                  startRowIndex: 0,
+                  endRowIndex: 1,
+                  startColumnIndex: 0,
+                  endColumnIndex: 8
+                },
+                mergeType: 'MERGE_ALL'
+              }
+            },
+            // Stats rows formatting (rows 3-5)
+            {
+              repeatCell: {
+                range: {
+                  sheetId: 0,
+                  startRowIndex: 2,
+                  endRowIndex: 5,
+                  startColumnIndex: 0,
+                  endColumnIndex: 8
+                },
+                cell: {
+                  userEnteredFormat: {
+                    backgroundColor: { red: 0.95, green: 0.95, blue: 0.95 },
+                    textFormat: { fontSize: 11 },
+                    verticalAlignment: 'MIDDLE'
+                  }
+                },
+                fields: 'userEnteredFormat(backgroundColor,textFormat,verticalAlignment)'
+              }
+            },
+            // Bold stat labels
+            {
+              repeatCell: {
+                range: {
+                  sheetId: 0,
+                  startRowIndex: 2,
+                  endRowIndex: 5,
+                  startColumnIndex: 0,
+                  endColumnIndex: 1
+                },
+                cell: {
+                  userEnteredFormat: {
+                    textFormat: { bold: true }
+                  }
+                },
+                fields: 'userEnteredFormat.textFormat.bold'
+              }
+            },
+            {
+              repeatCell: {
+                range: {
+                  sheetId: 0,
+                  startRowIndex: 2,
+                  endRowIndex: 5,
+                  startColumnIndex: 2,
+                  endColumnIndex: 3
+                },
+                cell: {
+                  userEnteredFormat: {
+                    textFormat: { bold: true }
+                  }
+                },
+                fields: 'userEnteredFormat.textFormat.bold'
+              }
+            },
+            {
+              repeatCell: {
+                range: {
+                  sheetId: 0,
+                  startRowIndex: 2,
+                  endRowIndex: 5,
+                  startColumnIndex: 4,
+                  endColumnIndex: 5
+                },
+                cell: {
+                  userEnteredFormat: {
+                    textFormat: { bold: true }
+                  }
+                },
+                fields: 'userEnteredFormat.textFormat.bold'
+              }
+            },
+            // Header row formatting (row 9)
+            {
+              repeatCell: {
+                range: {
+                  sheetId: 0,
+                  startRowIndex: 8,
+                  endRowIndex: 9,
+                  startColumnIndex: 0,
+                  endColumnIndex: 8
+                },
+                cell: {
+                  userEnteredFormat: {
+                    backgroundColor: { red: 0.3, green: 0.3, blue: 0.3 },
+                    textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, bold: true },
+                    horizontalAlignment: 'CENTER'
+                  }
+                },
+                fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)'
+              }
+            },
+            // Freeze dashboard and header rows
+            {
+              updateSheetProperties: {
+                properties: {
+                  sheetId: 0,
+                  gridProperties: {
+                    frozenRowCount: 9
+                  }
+                },
+                fields: 'gridProperties.frozenRowCount'
+              }
+            },
+            // Set column widths
+            {
+              updateDimensionProperties: {
+                range: {
+                  sheetId: 0,
+                  dimension: 'COLUMNS',
+                  startIndex: 0,
+                  endIndex: 1
+                },
+                properties: {
+                  pixelSize: 150
+                },
+                fields: 'pixelSize'
+              }
+            },
+            {
+              updateDimensionProperties: {
+                range: {
+                  sheetId: 0,
+                  dimension: 'COLUMNS',
+                  startIndex: 2,
+                  endIndex: 3
+                },
+                properties: {
+                  pixelSize: 200
+                },
+                fields: 'pixelSize'
+              }
+            }
+          ]
+        }
+      });
+
+      console.log('Dashboard created in Google Sheets');
     }
   } catch (error) {
-    console.error('Error checking/adding headers:', error.message);
+    console.error('Error creating dashboard:', error.message);
+  }
+}
+
+/**
+ * Update dashboard with latest statistics
+ */
+async function updateDashboard() {
+  try {
+    // Dashboard updates automatically via formulas, but we can trigger a refresh
+    // by reading the values (formulas will recalculate)
+    await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'Sheet1!A1:H9',
+    });
+    
+    console.log('Dashboard refreshed');
+  } catch (error) {
+    console.error('Error updating dashboard:', error.message);
   }
 }
 
