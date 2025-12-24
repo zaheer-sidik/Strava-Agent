@@ -195,7 +195,7 @@ async function ensureDashboard() {
           values: [
             ['STRAVA DASHBOARD', '', '', '', '', '', '', '', ''],
             ['Last Activity:', '=IF(COUNTA(B10:B)>0,IF(TODAY()-B10=0,"Today",IF(TODAY()-B10=1,"Yesterday",TEXT(TODAY()-B10,"0")&" days ago")),"No activities yet")', '', '', '', '', '', '', ''],
-            ['THIS WEEK', '', '', 'THIS YEAR', '', '', '', '', ''],
+            ['Week', '', '', 'Year', '', '', '', '', ''],
             ['Activities:', '=COUNTIFS(B10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1)', '', 'Activities:', '=COUNTIFS(B10:B,">="&DATE(YEAR(TODAY()),1,1))', '', '', '', ''],
             ['Distance:', '=SUMIF(B10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1,G10:G)', '', 'Distance:', '=SUMIF(B10:B,">="&DATE(YEAR(TODAY()),1,1),G10:G)', '', '', '', ''],
             ['Time:', '=TEXT(SUMIF(B10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1,H10:H),"[h]:mm")', '', 'Time:', '=TEXT(SUMIF(B10:B,">="&DATE(YEAR(TODAY()),1,1),H10:H),"[h]:mm")', 'Races:', '=SUMPRODUCT((B10:B>=DATE(YEAR(TODAY()),1,1))*(ISNUMBER(SEARCH("race",LOWER(D10:D))))*1)', ''],
@@ -211,7 +211,43 @@ async function ensureDashboard() {
         spreadsheetId: SPREADSHEET_ID,
         requestBody: {
           requests: [
-            // Title row formatting (row 1)
+            // Set Helvetica Neue as default font for entire sheet
+            {
+              repeatCell: {
+                range: {
+                  sheetId: 0
+                },
+                cell: {
+                  userEnteredFormat: {
+                    textFormat: {
+                      fontFamily: 'Helvetica Neue'
+                    }
+                  }
+                },
+                fields: 'userEnteredFormat.textFormat.fontFamily'
+              }
+            },
+            // All dashboard rows (1-9) with grey background, bold, same font size
+            {
+              repeatCell: {
+                range: {
+                  sheetId: 0,
+                  startRowIndex: 0,
+                  endRowIndex: 9,
+                  startColumnIndex: 0,
+                  endColumnIndex: 9
+                },
+                cell: {
+                  userEnteredFormat: {
+                    backgroundColor: { red: 0.85, green: 0.85, blue: 0.85 },
+                    textFormat: { fontSize: 11, bold: true, fontFamily: 'Helvetica Neue' },
+                    verticalAlignment: 'MIDDLE'
+                  }
+                },
+                fields: 'userEnteredFormat(backgroundColor,textFormat,verticalAlignment)'
+              }
+            },
+            // Title row special formatting (row 1) - larger font and centered
             {
               repeatCell: {
                 range: {
@@ -223,13 +259,11 @@ async function ensureDashboard() {
                 },
                 cell: {
                   userEnteredFormat: {
-                    backgroundColor: { red: 0.2, green: 0.4, blue: 0.8 },
-                    textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, fontSize: 16, bold: true },
-                    horizontalAlignment: 'CENTER',
-                    verticalAlignment: 'MIDDLE'
+                    textFormat: { fontSize: 16 },
+                    horizontalAlignment: 'CENTER'
                   }
                 },
-                fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment)'
+                fields: 'userEnteredFormat(textFormat.fontSize,horizontalAlignment)'
               }
             },
             // Merge title cells
@@ -245,79 +279,7 @@ async function ensureDashboard() {
                 mergeType: 'MERGE_ALL'
               }
             },
-            // Stats rows formatting (rows 3-5)
-            {
-              repeatCell: {
-                range: {
-                  sheetId: 0,
-                  startRowIndex: 2,
-                  endRowIndex: 5,
-                  startColumnIndex: 0,
-                  endColumnIndex: 9
-                },
-                cell: {
-                  userEnteredFormat: {
-                    backgroundColor: { red: 0.95, green: 0.95, blue: 0.95 },
-                    textFormat: { fontSize: 11 },
-                    verticalAlignment: 'MIDDLE'
-                  }
-                },
-                fields: 'userEnteredFormat(backgroundColor,textFormat,verticalAlignment)'
-              }
-            },
-            // Bold stat labels
-            {
-              repeatCell: {
-                range: {
-                  sheetId: 0,
-                  startRowIndex: 2,
-                  endRowIndex: 5,
-                  startColumnIndex: 0,
-                  endColumnIndex: 1
-                },
-                cell: {
-                  userEnteredFormat: {
-                    textFormat: { bold: true }
-                  }
-                },
-                fields: 'userEnteredFormat.textFormat.bold'
-              }
-            },
-            {
-              repeatCell: {
-                range: {
-                  sheetId: 0,
-                  startRowIndex: 2,
-                  endRowIndex: 5,
-                  startColumnIndex: 2,
-                  endColumnIndex: 3
-                },
-                cell: {
-                  userEnteredFormat: {
-                    textFormat: { bold: true }
-                  }
-                },
-                fields: 'userEnteredFormat.textFormat.bold'
-              }
-            },
-            {
-              repeatCell: {
-                range: {
-                  sheetId: 0,
-                  startRowIndex: 2,
-                  endRowIndex: 5,
-                  startColumnIndex: 4,
-                  endColumnIndex: 5
-                },
-                cell: {
-                  userEnteredFormat: {
-                    textFormat: { bold: true }
-                  }
-                },
-                fields: 'userEnteredFormat.textFormat.bold'
-              }
-            },
-            // Header row formatting (row 9)
+            // Header row formatting (row 9) - white text on dark grey
             {
               repeatCell: {
                 range: {
@@ -330,11 +292,11 @@ async function ensureDashboard() {
                 cell: {
                   userEnteredFormat: {
                     backgroundColor: { red: 0.3, green: 0.3, blue: 0.3 },
-                    textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 }, bold: true },
+                    textFormat: { foregroundColor: { red: 1, green: 1, blue: 1 } },
                     horizontalAlignment: 'CENTER'
                   }
                 },
-                fields: 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment)'
+                fields: 'userEnteredFormat(backgroundColor,textFormat.foregroundColor,horizontalAlignment)'
               }
             },
             // Freeze dashboard and header rows
