@@ -139,7 +139,7 @@ async function handleNewActivity(activityId, athleteId) {
   const notes = activity.description || '';
   const type = activity.type || '';
   const distance = activity.distance ? (activity.distance / 1000).toFixed(2) : '0';
-  const duration = activity.moving_time ? formatDuration(activity.moving_time) : 'N/A';
+  const duration = activity.elapsed_time ? formatDuration(activity.elapsed_time) : 'N/A';
 
   // Add to Google Sheets with activity ID for future updates
   await appendToSheet([day, date, time, title, notes, type, distance, duration, activityId.toString()]);
@@ -184,7 +184,7 @@ async function handleActivityUpdate(activityId, athleteId) {
   const notes = activity.description || '';
   const type = activity.type || '';
   const distance = activity.distance ? (activity.distance / 1000).toFixed(2) : '0';
-  const duration = activity.moving_time ? formatDuration(activity.moving_time) : 'N/A';
+  const duration = activity.elapsed_time ? formatDuration(activity.elapsed_time) : 'N/A';
 
   console.log(`Updating activity with: day=${day}, date=${date}, time=${time}, title=${title}, notes=${notes}`);
 
