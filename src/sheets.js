@@ -35,7 +35,7 @@ try {
 
 /**
  * Append a row to the Google Sheet (inserts at row 10, right after dashboard)
- * @param {Array} values - Array of values to append [date, time, title, notes, type, distance, duration, activityId]
+ * @param {Array} values - Array of values to append [day, date, time, title, notes, type, distance, duration, activityId]
  */
 export async function appendToSheet(values) {
   if (!sheets) {
@@ -45,6 +45,35 @@ export async function appendToSheet(values) {
   try {
     // First, ensure the sheet structure exists
     await ensureDashboard();
+
+    // Check if this activity ID already exists
+    const activityId = values[8]; // Activity ID is the last element
+    const checkResponse = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'Sheet1!I10:I',
+    });
+    
+    const existingIds = checkResponse.data.values || [];
+    const existingRowIndex = existingIds.findIndex(row => row[0] === activityId);
+    
+    if (existingRowIndex !== -1) {
+      const rowNumber = existingRowIndex + 10; // +10 because we start from row 10
+      console.log(`Activity ID ${activityId} already exists at row ${rowNumber}, updating instead`);
+      
+      // Update the existing row instead of inserting
+      const updateResponse = await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `Sheet1!A${rowNumber}:I${rowNumber}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [values],
+        },
+      });
+      
+      console.log(`Updated existing row ${rowNumber}: ${updateResponse.data.updatedRows} row(s) updated`);
+      await updateDashboard();
+      return updateResponse.data;
+    }
 
     // Insert the new row at row 10 (right after dashboard and headers)
     // This pushes existing data down
