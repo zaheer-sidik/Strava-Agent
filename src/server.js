@@ -185,12 +185,11 @@ async function handleActivityUpdate(activityId, athleteId) {
   console.log(`Activity "${title}" updated in Google Sheets`);
 }
 
-// Format duration from seconds to HH:MM:SS
+// Format duration from seconds to Google Sheets duration value (fraction of a day)
 function formatDuration(seconds) {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = seconds % 60;
-  return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  // Convert seconds to fraction of a day (1 day = 86400 seconds)
+  // Return as a formula so Google Sheets treats it as a duration
+  return `=${seconds}/86400`;
 }
 
 // Health check endpoint
