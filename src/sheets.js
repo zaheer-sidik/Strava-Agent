@@ -69,7 +69,7 @@ export async function appendToSheet(values) {
     // Now add the data to row 10
     const response = await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Sheet1!A10:H10',
+      range: 'Sheet1!A10:I10',
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [values],
@@ -102,15 +102,15 @@ export async function updateSheetRow(activityId, values) {
     // Get all data from the sheet (starting from row 9 to skip dashboard)
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: 'Sheet1!A9:H',
+      range: 'Sheet1!A9:I',
     });
 
     const rows = response.data.values || [];
     
-    // Find the row index with matching activity ID (column H, index 7)
+    // Find the row index with matching activity ID (column I, index 8)
     let rowIndex = -1;
     for (let i = 1; i < rows.length; i++) { // Start at 1 to skip activity header (row 9)
-      if (rows[i][7] === activityId) { // Column H (Activity ID)
+      if (rows[i][8] === activityId) { // Column I (Activity ID)
         rowIndex = i + 9; // +9 because we started from row 9
         break;
       }
@@ -125,7 +125,7 @@ export async function updateSheetRow(activityId, values) {
     // Update the found row
     const updateResponse = await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `Sheet1!A${rowIndex}:H${rowIndex}`,
+      range: `Sheet1!A${rowIndex}:I${rowIndex}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: [values],
@@ -160,19 +160,19 @@ async function ensureDashboard() {
       // Create dashboard and headers
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: 'Sheet1!A1:H9',
+        range: 'Sheet1!A1:I9',
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [
-            ['STRAVA DASHBOARD', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['Last Activity:', '=IF(COUNTA(A10:A)>0,A10,\"No activities yet\")', 'Activities This Week:', '=COUNTIFS(A10:A,">="&TODAY()-WEEKDAY(TODAY(),2)+1)', 'Activities This Year:', '=COUNTIFS(A10:A,">="&DATE(YEAR(TODAY()),1,1))', '', ''],
-            ['Total Distance (This Week):', '=SUMIF(A10:A,">="&TODAY()-WEEKDAY(TODAY(),2)+1,F10:F)', 'Total Distance (This Year):', '=SUMIF(A10:A,">="&DATE(YEAR(TODAY()),1,1),F10:F)', 'Total Activities:', '=COUNTA(A10:A)', '', ''],
-            ['Races This Year:', '=SUMPRODUCT((A10:A>=DATE(YEAR(TODAY()),1,1))*(ISNUMBER(SEARCH("race",LOWER(C10:C))))*1)', 'Average Distance:', '=IF(COUNTA(F10:F)>0,AVERAGE(F10:F)&\" km\",\"N/A\")', 'Most Common Activity:', '=IF(COUNTA(E10:E)>0,INDEX(E10:E,MODE(MATCH(E10:E,E10:E,0))),"N/A")', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['', '', '', '', '', '', '', ''],
-            ['Date', 'Time', 'Activity Title', 'Notes', 'Type', 'Distance', 'Duration', 'Activity ID'],
+            ['STRAVA DASHBOARD', '', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', '', ''],
+            ['Last Activity:', '=IF(COUNTA(B10:B)>0,B10,"No activities yet")', 'Activities This Week:', '=COUNTIFS(B10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1)', 'Activities This Year:', '=COUNTIFS(B10:B,">="&DATE(YEAR(TODAY()),1,1))', '', '', ''],
+            ['Total Distance (This Week):', '=SUMIF(B10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1,G10:G)', 'Total Distance (This Year):', '=SUMIF(B10:B,">="&DATE(YEAR(TODAY()),1,1),G10:G)', 'Total Activities:', '=COUNTA(B10:B)', '', '', ''],
+            ['Races This Year:', '=SUMPRODUCT((B10:B>=DATE(YEAR(TODAY()),1,1))*(ISNUMBER(SEARCH("race",LOWER(D10:D))))*1)', 'Average Distance:', '=IF(COUNTA(G10:G)>0,AVERAGE(G10:G),"N/A")', 'Most Common Activity:', '=IF(COUNTA(F10:F)>0,INDEX(F10:F,MODE(MATCH(F10:F,F10:F,0))),"N/A")', '', '', ''],
+            ['', '', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', '', ''],
+            ['', '', '', '', '', '', '', '', ''],
+            ['Day', 'Date', 'Time', 'Activity Title', 'Notes', 'Type', 'Distance', 'Duration', 'Activity ID'],
           ],
         },
       });
@@ -190,7 +190,7 @@ async function ensureDashboard() {
                   startRowIndex: 0,
                   endRowIndex: 1,
                   startColumnIndex: 0,
-                  endColumnIndex: 8
+                  endColumnIndex: 9
                 },
                 cell: {
                   userEnteredFormat: {
@@ -211,7 +211,7 @@ async function ensureDashboard() {
                   startRowIndex: 0,
                   endRowIndex: 1,
                   startColumnIndex: 0,
-                  endColumnIndex: 8
+                  endColumnIndex: 9
                 },
                 mergeType: 'MERGE_ALL'
               }
@@ -224,7 +224,7 @@ async function ensureDashboard() {
                   startRowIndex: 2,
                   endRowIndex: 5,
                   startColumnIndex: 0,
-                  endColumnIndex: 8
+                  endColumnIndex: 9
                 },
                 cell: {
                   userEnteredFormat: {
@@ -296,7 +296,7 @@ async function ensureDashboard() {
                   startRowIndex: 8,
                   endRowIndex: 9,
                   startColumnIndex: 0,
-                  endColumnIndex: 8
+                  endColumnIndex: 9
                 },
                 cell: {
                   userEnteredFormat: {

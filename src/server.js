@@ -125,12 +125,12 @@ async function handleNewActivity(activityId, athleteId) {
   
   // Extract relevant data
   const activityDate = new Date(activity.start_date);
+  const day = activityDate.toLocaleDateString('en-GB', { weekday: 'short' });
   const date = activityDate.toLocaleDateString('en-GB', {
-    weekday: 'short',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
-  }).replace(/(\w+) (\d+)\/(\d+)\/(\d+)/, '$1 $2/$3/$4');
+  });
   const time = activityDate.toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit'
@@ -138,11 +138,11 @@ async function handleNewActivity(activityId, athleteId) {
   const title = activity.name || 'Untitled Activity';
   const notes = activity.description || '';
   const type = activity.type || '';
-  const distance = activity.distance ? (activity.distance / 1000).toFixed(2) + ' km' : '0 km';
+  const distance = activity.distance ? (activity.distance / 1000).toFixed(2) : '0';
   const duration = activity.moving_time ? formatDuration(activity.moving_time) : 'N/A';
 
   // Add to Google Sheets with activity ID for future updates
-  await appendToSheet([date, time, title, notes, type, distance, duration, activityId.toString()]);
+  await appendToSheet([day, date, time, title, notes, type, distance, duration, activityId.toString()]);
   console.log(`Activity "${title}" added to Google Sheets`);
 }
 
@@ -170,12 +170,12 @@ async function handleActivityUpdate(activityId, athleteId) {
   
   // Extract and format updated data
   const activityDate = new Date(activity.start_date);
+  const day = activityDate.toLocaleDateString('en-GB', { weekday: 'short' });
   const date = activityDate.toLocaleDateString('en-GB', {
-    weekday: 'short',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
-  }).replace(/(\w+) (\d+)\/(\d+)\/(\d+)/, '$1 $2/$3/$4');
+  });
   const time = activityDate.toLocaleTimeString('en-GB', {
     hour: '2-digit',
     minute: '2-digit'
@@ -183,13 +183,13 @@ async function handleActivityUpdate(activityId, athleteId) {
   const title = activity.name || 'Untitled Activity';
   const notes = activity.description || '';
   const type = activity.type || '';
-  const distance = activity.distance ? (activity.distance / 1000).toFixed(2) + ' km' : '0 km';
+  const distance = activity.distance ? (activity.distance / 1000).toFixed(2) : '0';
   const duration = activity.moving_time ? formatDuration(activity.moving_time) : 'N/A';
 
-  console.log(`Updating activity with: date=${date}, time=${time}, title=${title}, notes=${notes}`);
+  console.log(`Updating activity with: day=${day}, date=${date}, time=${time}, title=${title}, notes=${notes}`);
 
   // Update the existing row in Google Sheets
-  await updateSheetRow(activityId.toString(), [date, time, title, notes, type, distance, duration, activityId.toString()]);
+  await updateSheetRow(activityId.toString(), [day, date, time, title, notes, type, distance, duration, activityId.toString()]);
   console.log(`Activity "${title}" updated in Google Sheets`);
 }
 
