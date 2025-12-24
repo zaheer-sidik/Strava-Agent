@@ -198,7 +198,7 @@ async function ensureDashboard() {
             ['THIS WEEK', '', '', 'THIS YEAR', '', '', '', '', ''],
             ['Activities:', '=COUNTIFS(B10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1)', '', 'Activities:', '=COUNTIFS(B10:B,">="&DATE(YEAR(TODAY()),1,1))', '', '', '', ''],
             ['Distance:', '=SUMIF(B10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1,G10:G)', '', 'Distance:', '=SUMIF(B10:B,">="&DATE(YEAR(TODAY()),1,1),G10:G)', '', '', '', ''],
-            ['Time:', '=SUMIF(B10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1,H10:H)', '', 'Time:', '=SUMIF(B10:B,">="&DATE(YEAR(TODAY()),1,1),H10:H)', 'Races:', '=SUMPRODUCT((B10:B>=DATE(YEAR(TODAY()),1,1))*(ISNUMBER(SEARCH("race",LOWER(D10:D))))*1)', ''],
+            ['Time:', '=TEXT(SUMIF(B10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1,H10:H),"[h]:mm")', '', 'Time:', '=TEXT(SUMIF(B10:B,">="&DATE(YEAR(TODAY()),1,1),H10:H),"[h]:mm")', 'Races:', '=SUMPRODUCT((B10:B>=DATE(YEAR(TODAY()),1,1))*(ISNUMBER(SEARCH("race",LOWER(D10:D))))*1)', ''],
             ['', '', '', '', '', '', '', '', ''],
             ['Last Activity:', '=IF(COUNTA(B10:B)>0,TEXT(B10,"DD/MM/YYYY"),"No activities yet")', '', '', '', '', '', '', ''],
             ['Day', 'Date', 'Time', 'Activity Title', 'Notes', 'Type', 'Distance', 'Duration', 'Activity ID'],
