@@ -126,7 +126,7 @@ async function handleNewActivity(activityId, athleteId) {
   // Extract relevant data
   const activityDate = new Date(activity.start_date);
   const date = activityDate.toLocaleDateString('en-GB', {
-    weekday: 'long',
+    weekday: 'short',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
@@ -138,7 +138,7 @@ async function handleNewActivity(activityId, athleteId) {
   const title = activity.name || 'Untitled Activity';
   const notes = activity.description || '';
   const type = activity.type || '';
-  const distance = activity.distance ? (activity.distance / 1000).toFixed(2) + ' km' : 'N/A';
+  const distance = activity.distance ? (activity.distance / 1000).toFixed(2) + ' km' : '0 km';
   const duration = activity.moving_time ? formatDuration(activity.moving_time) : 'N/A';
 
   // Add to Google Sheets with activity ID for future updates
@@ -171,7 +171,7 @@ async function handleActivityUpdate(activityId, athleteId) {
   // Extract and format updated data
   const activityDate = new Date(activity.start_date);
   const date = activityDate.toLocaleDateString('en-GB', {
-    weekday: 'long',
+    weekday: 'short',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric'
@@ -183,7 +183,7 @@ async function handleActivityUpdate(activityId, athleteId) {
   const title = activity.name || 'Untitled Activity';
   const notes = activity.description || '';
   const type = activity.type || '';
-  const distance = activity.distance ? (activity.distance / 1000).toFixed(2) + ' km' : 'N/A';
+  const distance = activity.distance ? (activity.distance / 1000).toFixed(2) + ' km' : '0 km';
   const duration = activity.moving_time ? formatDuration(activity.moving_time) : 'N/A';
 
   console.log(`Updating activity with: date=${date}, time=${time}, title=${title}, notes=${notes}`);
