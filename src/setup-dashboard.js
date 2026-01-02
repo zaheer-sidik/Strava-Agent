@@ -476,13 +476,32 @@ async function setupPowerOf10Section() {
     
     console.log(`✓ Fetched data for ${result.name}`);
     
-    // Prepare rows for common running distances
-    const distances = ['800', '1500', '1M', '3000', '5000', '5K', '10K', '10000', 'Half', 'Mar'];
+    // First, clear the old Power of 10 section and unmerge cells
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        requests: [
+          // Clear any existing merges in the Power of 10 area
+          {
+            unmergeCells: {
+              range: {
+                sheetId: 0,
+                startRowIndex: 0,
+                endRowIndex: 20,
+                startColumnIndex: 9,
+                endColumnIndex: 13
+              }
+            }
+          }
+        ]
+      }
+    });
+    
+    // Prepare rows for specific events only
+    const distances = ['60', '100', '200', '400', '110H', 'HJ'];
     const pbRows = [
-      ['POWER OF 10 PBs'],
-      ['Athlete:', result.name || 'Unknown'],
-      [''],
-      ['Distance', 'Time', 'Venue', 'Date']
+      ['POWER OF 10 PBs', '', ''],
+      ['Event', 'Time', 'Date']
     ];
 
     // Add each distance
@@ -492,16 +511,18 @@ async function setupPowerOf10Section() {
         pbRows.push([
           dist,
           pb.time || '',
-          pb.venue || '',
           pb.date || ''
         ]);
+      } else {
+        // Add empty row for missing events
+        pbRows.push([dist, '', '']);
       }
     }
 
-    // Add the Power of 10 section (columns J-M, starting from row 1)
+    // Add the Power of 10 section (columns J-L, starting from row 1)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `Sheet1!J1:M${pbRows.length}`,
+      range: `Sheet1!J1:L${pbRows.length}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: pbRows,
@@ -521,7 +542,7 @@ async function setupPowerOf10Section() {
                 startRowIndex: 0,
                 endRowIndex: 1,
                 startColumnIndex: 9,
-                endColumnIndex: 13
+                endColumnIndex: 12
               },
               cell: {
                 userEnteredFormat: {
@@ -551,12 +572,12 @@ async function setupPowerOf10Section() {
                 startRowIndex: 0,
                 endRowIndex: 1,
                 startColumnIndex: 9,
-                endColumnIndex: 13
+                endColumnIndex: 12
               },
               mergeType: 'MERGE_ALL'
             }
           },
-          // Athlete name row
+          // Header row (row 2)
           {
             repeatCell: {
               range: {
@@ -564,37 +585,7 @@ async function setupPowerOf10Section() {
                 startRowIndex: 1,
                 endRowIndex: 2,
                 startColumnIndex: 9,
-                endColumnIndex: 13
-              },
-              cell: {
-                userEnteredFormat: {
-                  backgroundColor: { red: 1, green: 1, blue: 1 },
-                  textFormat: { 
-                    fontFamily: 'Helvetica Neue',
-                    fontSize: 12,
-                    foregroundColor: { red: 0.3, green: 0.3, blue: 0.3 }
-                  },
-                  horizontalAlignment: 'RIGHT',
-                  verticalAlignment: 'MIDDLE',
-                  padding: {
-                    top: 12,
-                    bottom: 12,
-                    left: 12
-                  }
-                }
-              },
-              fields: 'userEnteredFormat'
-            }
-          },
-          // Header row (row 4)
-          {
-            repeatCell: {
-              range: {
-                sheetId: 0,
-                startRowIndex: 3,
-                endRowIndex: 4,
-                startColumnIndex: 9,
-                endColumnIndex: 13
+                endColumnIndex: 12
               },
               cell: {
                 userEnteredFormat: {
@@ -621,10 +612,10 @@ async function setupPowerOf10Section() {
             repeatCell: {
               range: {
                 sheetId: 0,
-                startRowIndex: 4,
+                startRowIndex: 2,
                 endRowIndex: pbRows.length,
                 startColumnIndex: 9,
-                endColumnIndex: 13
+                endColumnIndex: 12
               },
               cell: {
                 userEnteredFormat: {
@@ -681,20 +672,6 @@ async function setupPowerOf10Section() {
                 dimension: 'COLUMNS',
                 startIndex: 11,
                 endIndex: 12
-              },
-              properties: {
-                pixelSize: 150
-              },
-              fields: 'pixelSize'
-            }
-          },
-          {
-            updateDimensionProperties: {
-              range: {
-                sheetId: 0,
-                dimension: 'COLUMNS',
-                startIndex: 12,
-                endIndex: 13
               },
               properties: {
                 pixelSize: 100

@@ -384,13 +384,11 @@ export async function updatePowerOf10Section(pbsData) {
       return;
     }
 
-    // Prepare rows for common running distances
-    const distances = ['800', '1500', '1M', '3000', '5000', '5K', '10K', '10000', 'Half', 'Mar'];
+    // Prepare rows for specific events only
+    const distances = ['60', '100', '200', '400', '110H', 'HJ'];
     const pbRows = [
-      ['POWER OF 10 PBs'],
-      ['Athlete:', pbsData.name || 'Unknown'],
-      [''],
-      ['Distance', 'Time', 'Venue', 'Date']
+      ['POWER OF 10 PBs', '', ''],
+      ['Event', 'Time', 'Date']
     ];
 
     // Add each distance
@@ -400,16 +398,18 @@ export async function updatePowerOf10Section(pbsData) {
         pbRows.push([
           dist,
           pb.time || '',
-          pb.venue || '',
           pb.date || ''
         ]);
+      } else {
+        // Add empty row for missing events
+        pbRows.push([dist, '', '']);
       }
     }
 
-    // Update the Power of 10 section (columns J-M, starting from row 1)
+    // Update the Power of 10 section (columns J-L, starting from row 1)
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `Sheet1!J1:M${pbRows.length}`,
+      range: `Sheet1!J1:L${pbRows.length}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: {
         values: pbRows,
@@ -429,7 +429,7 @@ export async function updatePowerOf10Section(pbsData) {
                 startRowIndex: 0,
                 endRowIndex: 1,
                 startColumnIndex: 9,
-                endColumnIndex: 13
+                endColumnIndex: 12
               },
               cell: {
                 userEnteredFormat: {
@@ -455,12 +455,12 @@ export async function updatePowerOf10Section(pbsData) {
                 startRowIndex: 0,
                 endRowIndex: 1,
                 startColumnIndex: 9,
-                endColumnIndex: 13
+                endColumnIndex: 12
               },
               mergeType: 'MERGE_ALL'
             }
           },
-          // Athlete name row
+          // Header row (row 2)
           {
             repeatCell: {
               range: {
@@ -468,31 +468,7 @@ export async function updatePowerOf10Section(pbsData) {
                 startRowIndex: 1,
                 endRowIndex: 2,
                 startColumnIndex: 9,
-                endColumnIndex: 13
-              },
-              cell: {
-                userEnteredFormat: {
-                  backgroundColor: { red: 1, green: 1, blue: 1 },
-                  textFormat: { 
-                    fontFamily: 'Helvetica Neue',
-                    fontSize: 12,
-                    foregroundColor: { red: 0.3, green: 0.3, blue: 0.3 }
-                  },
-                  horizontalAlignment: 'RIGHT'
-                }
-              },
-              fields: 'userEnteredFormat'
-            }
-          },
-          // Header row (row 4)
-          {
-            repeatCell: {
-              range: {
-                sheetId: 0,
-                startRowIndex: 3,
-                endRowIndex: 4,
-                startColumnIndex: 9,
-                endColumnIndex: 13
+                endColumnIndex: 12
               },
               cell: {
                 userEnteredFormat: {

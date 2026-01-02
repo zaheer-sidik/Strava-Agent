@@ -94,12 +94,16 @@ app.post('/webhook', async (req, res) => {
     if (event.aspect_type === 'create') {
       try {
         await handleNewActivity(event.object_id, event.owner_id);
+        // Update Power of 10 PBs after activity is logged
+        await updatePowerOf10PBs();
       } catch (error) {
         console.error('Error handling activity:', error);
       }
     } else if (event.aspect_type === 'update') {
       try {
         await handleActivityUpdate(event.object_id, event.owner_id);
+        // Update Power of 10 PBs after activity is updated
+        await updatePowerOf10PBs();
       } catch (error) {
         console.error('Error handling activity update:', error);
       }
@@ -186,7 +190,38 @@ async function handleActivityUpdate(activityId, athleteId) {
   console.log(`Updating activity with: day=${day}, date=${dateFormula}, time=${time}, title=${title}, notes=${notes}`);
 
   // Update the existing row in Google Sheets
-  await updateSheetRow(activityId.toString(), [day, dateFormula, time, title, notes, type, distance, duration, activityId.toString()]);
+  aUpdate Power of 10 PBs in the sheet
+async function updatePowerOf10PBs() {
+  if (!POWER_OF_10_ATHLETE_ID) {
+    console.log('POWER_OF_10_ATHLETE_ID not configured, skipping PB update');
+    return;
+  }
+
+  try {
+    const pythonPath = '.venv/bin/python';
+    const scriptPath = 'src/fetch_power_of_10.py';
+    const command = `${pythonPath} ${scriptPath} ${POWER_OF_10_ATHLETE_ID}`;
+    
+    const { stdout, stderr } = await execAsync(command);
+    
+    if (stderr) {
+      console.error('Python script stderr:', stderr);
+    }
+    
+    const result = JSON.parse(stdout);
+    
+    if (result.success) {
+      await updatePowerOf10Section(result);
+      console.log('Power of 10 PBs updated in Google Sheet');
+    } else {
+      console.error('Failed to fetch Power of 10 data:', result.error);
+    }
+  } catch (error) {
+    console.error('Error updating Power of 10 PBs:', error.message);
+  }
+}
+
+// wait updateSheetRow(activityId.toString(), [day, dateFormula, time, title, notes, type, distance, duration, activityId.toString()]);
   console.log(`Activity "${title}" updated in Google Sheets`);
 }
 

@@ -4,7 +4,8 @@ Fetch personal best times from Power of 10 (UK athletics rankings database)
 """
 import sys
 import json
-from power_of_10 import AthleteProfile
+import requests
+from bs4 import BeautifulSoup
 
 def get_personal_bests(athlete_id):
     """
@@ -17,35 +18,73 @@ def get_personal_bests(athlete_id):
         Dictionary containing personal best times for various distances
     """
     try:
-        # Get athlete profile using the power-of-10 library
-        athlete = AthleteProfile(athlete_id)
+        # Fetch the athlete's page
+        url = f"https://www.thepowerof10.info/athletes/profile.aspx?athleteid={athlete_id}"
         
-        # Extract personal bests
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+        
+        response = requests.get(url, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        # Parse the HTML
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Get athlete name from the h2 tag
+        athlete_name = 'Unknown'
+        name_tag = soup.find('h2')
+        if name_tag:
+            athlete_name = name_tag.get_text().strip()
+        
+        # Find the personal bests table - look for the table with "Best known performances" heading
         pbs = {}
         
-        # Get the athlete's PBs
-        if hasattr(athlete, 'pbs') and athlete.pbs:
-            for event, data in athlete.pbs.items():
-                if isinstance(data, dict):
-                    pbs[event] = {
-                        'time': data.get('perf', ''),
-                        'venue': data.get('venue', ''),
-                        'date': data.get('date', '')
-                    }
-                elif hasattr(data, 'perf'):
-                    pbs[event] = {
-                        'time': data.perf if hasattr(data, 'perf') else '',
-                        'venue': data.venue if hasattr(data, 'venue') else '',
-                        'date': data.date if hasattr(data, 'date') else ''
-                    }
+        # Find the section with "Best known performances"
+        best_perf_heading = soup.find(string=lambda text: text and 'Best known performances' in text)
+        
+        if best_perf_heading:
+            # Find the next table after this heading
+            parent = best_perf_heading.find_parent()
+            if parent:
+                table = parent.find_next('table')
+                
+                if table:
+                    rows = table.find_all('tr')
+                    
+                    # First row contains headers and column years
+                    # Second row onwards contain the data
+                    for row in rows[1:]:  # Skip first row (headers)
+                        cols = row.find_all('td')
+                        
+                        if len(cols) >= 3:
+                            event = cols[0].get_text().strip()
+                            pb_cell = cols[1].get_text().strip() if len(cols) > 1 else ''
+                            
+                            # Extract just the PB time (first value before other data)
+                            pb_time = pb_cell.split()[0] if pb_cell else ''
+                            
+                            # Only include valid events with times
+                            if event and pb_time and event != 'Event' and pb_time not in ['', '-']:
+                                pbs[event] = {
+                                    'time': pb_time,
+                                    'venue': '',  # Venue not in PB summary table
+                                    'date': ''     # Date not in PB summary table
+                                }
         
         return {
             'success': True,
             'athlete_id': athlete_id,
-            'name': athlete.name if hasattr(athlete, 'name') else 'Unknown',
+            'name': athlete_name,
             'personal_bests': pbs
         }
         
+    except requests.exceptions.RequestException as e:
+        return {
+            'success': False,
+            'error': f'Request error: {str(e)}',
+            'athlete_id': athlete_id
+        }
     except Exception as e:
         return {
             'success': False,
