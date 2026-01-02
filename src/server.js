@@ -190,7 +190,9 @@ async function handleActivityUpdate(activityId, athleteId) {
   console.log(`Updating activity with: day=${day}, date=${dateFormula}, time=${time}, title=${title}, notes=${notes}`);
 
   // Update the existing row in Google Sheets
-  aUpdate Power of 10 PBs in the sheet
+}
+
+// Update Power of 10 PBs in the sheet
 async function updatePowerOf10PBs() {
   if (!POWER_OF_10_ATHLETE_ID) {
     console.log('POWER_OF_10_ATHLETE_ID not configured, skipping PB update');
@@ -223,7 +225,6 @@ async function updatePowerOf10PBs() {
 
 // wait updateSheetRow(activityId.toString(), [day, dateFormula, time, title, notes, type, distance, duration, activityId.toString()]);
   console.log(`Activity "${title}" updated in Google Sheets`);
-}
 
 // Format duration from seconds to Google Sheets duration value (fraction of a day)
 function formatDuration(seconds) {

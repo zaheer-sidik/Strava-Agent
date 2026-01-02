@@ -41,7 +41,7 @@ def get_personal_bests(athlete_id):
         pbs = {}
         
         # Find the section with "Best known performances"
-        best_perf_heading = soup.find(string=lambda text: text and 'Best known performances' in text)
+        best_perf_heading = soup.find(string=lambda text: 'Best known performances' in str(text) if text else False)
         
         if best_perf_heading:
             # Find the next table after this heading
