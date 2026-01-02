@@ -1,7 +1,11 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import fetch from 'node-fetch';
-import { appendToSheet, updateSheetRow } from './sheets.js';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { appendToSheet, updateSheetRow, updatePowerOf10Section } from './sheets.js';
+
+const execAsync = promisify(exec);
 
 dotenv.config();
 
@@ -12,6 +16,7 @@ const PORT = process.env.PORT || 3000;
 const STRAVA_CLIENT_ID = process.env.STRAVA_CLIENT_ID;
 const STRAVA_CLIENT_SECRET = process.env.STRAVA_CLIENT_SECRET;
 const STRAVA_VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN;
+const POWER_OF_10_ATHLETE_ID = process.env.POWER_OF_10_ATHLETE_ID;
 
 // Token management
 let currentAccessToken = process.env.STRAVA_ACCESS_TOKEN;
@@ -191,6 +196,80 @@ function formatDuration(seconds) {
   // Return as a formula so Google Sheets treats it as a duration
   return `=${seconds}/86400`;
 }
+
+// Power of 10 PBs endpoint
+app.get('/api/power-of-10-pbs', async (req, res) => {
+  try {
+    if (!POWER_OF_10_ATHLETE_ID) {
+      return res.status(400).json({
+        success: false,
+        error: 'POWER_OF_10_ATHLETE_ID not configured in environment'
+      });
+    }
+
+    const pythonPath = '.venv/bin/python';
+    const scriptPath = 'src/fetch_power_of_10.py';
+    const command = `${pythonPath} ${scriptPath} ${POWER_OF_10_ATHLETE_ID}`;
+    
+    const { stdout, stderr } = await execAsync(command);
+    
+    if (stderr) {
+      console.error('Python script stderr:', stderr);
+    }
+    
+    const result = JSON.parse(stdout);
+    res.json(result);
+    
+  } catch (error) {
+    console.error('Error fetching Power of 10 data:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Update Power of 10 PBs in Google Sheet
+app.post('/api/power-of-10-pbs/update-sheet', async (req, res) => {
+  try {
+    if (!POWER_OF_10_ATHLETE_ID) {
+      return res.status(400).json({
+        success: false,
+        error: 'POWER_OF_10_ATHLETE_ID not configured in environment'
+      });
+    }
+
+    const pythonPath = '.venv/bin/python';
+    const scriptPath = 'src/fetch_power_of_10.py';
+    const command = `${pythonPath} ${scriptPath} ${POWER_OF_10_ATHLETE_ID}`;
+    
+    const { stdout, stderr } = await execAsync(command);
+    
+    if (stderr) {
+      console.error('Python script stderr:', stderr);
+    }
+    
+    const result = JSON.parse(stdout);
+    
+    if (result.success) {
+      await updatePowerOf10Section(result);
+      res.json({
+        success: true,
+        message: 'Power of 10 section updated in Google Sheet',
+        data: result
+      });
+    } else {
+      res.status(500).json(result);
+    }
+    
+  } catch (error) {
+    console.error('Error updating Power of 10 section:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {

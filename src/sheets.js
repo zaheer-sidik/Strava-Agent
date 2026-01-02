@@ -370,6 +370,180 @@ async function updateDashboard() {
 }
 
 /**
+ * Update Power of 10 personal bests section
+ * @param {Object} pbsData - Personal bests data from Power of 10
+ */
+export async function updatePowerOf10Section(pbsData) {
+  if (!sheets) {
+    throw new Error('Google Sheets not initialized. Check credentials.');
+  }
+
+  try {
+    if (!pbsData.success || !pbsData.personal_bests) {
+      console.log('No Power of 10 data available');
+      return;
+    }
+
+    // Prepare rows for common running distances
+    const distances = ['800', '1500', '1M', '3000', '5000', '5K', '10K', '10000', 'Half', 'Mar'];
+    const pbRows = [
+      ['POWER OF 10 PBs'],
+      ['Athlete:', pbsData.name || 'Unknown'],
+      [''],
+      ['Distance', 'Time', 'Venue', 'Date']
+    ];
+
+    // Add each distance
+    for (const dist of distances) {
+      const pb = pbsData.personal_bests[dist];
+      if (pb) {
+        pbRows.push([
+          dist,
+          pb.time || '',
+          pb.venue || '',
+          pb.date || ''
+        ]);
+      }
+    }
+
+    // Update the Power of 10 section (columns J-M, starting from row 1)
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `Sheet1!J1:M${pbRows.length}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: pbRows,
+      },
+    });
+
+    // Apply formatting to Power of 10 section
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId: SPREADSHEET_ID,
+      requestBody: {
+        requests: [
+          // Title row - dark background
+          {
+            repeatCell: {
+              range: {
+                sheetId: 0,
+                startRowIndex: 0,
+                endRowIndex: 1,
+                startColumnIndex: 9,
+                endColumnIndex: 13
+              },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: { red: 0.12, green: 0.12, blue: 0.12 },
+                  textFormat: { 
+                    fontFamily: 'Helvetica Neue',
+                    fontSize: 12, 
+                    bold: true,
+                    foregroundColor: { red: 1, green: 1, blue: 1 }
+                  },
+                  horizontalAlignment: 'CENTER',
+                  verticalAlignment: 'MIDDLE'
+                }
+              },
+              fields: 'userEnteredFormat'
+            }
+          },
+          // Merge title cells
+          {
+            mergeCells: {
+              range: {
+                sheetId: 0,
+                startRowIndex: 0,
+                endRowIndex: 1,
+                startColumnIndex: 9,
+                endColumnIndex: 13
+              },
+              mergeType: 'MERGE_ALL'
+            }
+          },
+          // Athlete name row
+          {
+            repeatCell: {
+              range: {
+                sheetId: 0,
+                startRowIndex: 1,
+                endRowIndex: 2,
+                startColumnIndex: 9,
+                endColumnIndex: 13
+              },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: { red: 1, green: 1, blue: 1 },
+                  textFormat: { 
+                    fontFamily: 'Helvetica Neue',
+                    fontSize: 12,
+                    foregroundColor: { red: 0.3, green: 0.3, blue: 0.3 }
+                  },
+                  horizontalAlignment: 'RIGHT'
+                }
+              },
+              fields: 'userEnteredFormat'
+            }
+          },
+          // Header row (row 4)
+          {
+            repeatCell: {
+              range: {
+                sheetId: 0,
+                startRowIndex: 3,
+                endRowIndex: 4,
+                startColumnIndex: 9,
+                endColumnIndex: 13
+              },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: { red: 0.18, green: 0.18, blue: 0.18 },
+                  textFormat: { 
+                    fontFamily: 'Helvetica Neue',
+                    foregroundColor: { red: 1, green: 1, blue: 1 },
+                    bold: true,
+                    fontSize: 11
+                  },
+                  horizontalAlignment: 'CENTER'
+                }
+              },
+              fields: 'userEnteredFormat'
+            }
+          },
+          // Data rows - alternating background
+          {
+            repeatCell: {
+              range: {
+                sheetId: 0,
+                startRowIndex: 4,
+                endRowIndex: pbRows.length,
+                startColumnIndex: 9,
+                endColumnIndex: 13
+              },
+              cell: {
+                userEnteredFormat: {
+                  backgroundColor: { red: 0.98, green: 0.98, blue: 0.98 },
+                  textFormat: { 
+                    fontFamily: 'Helvetica Neue',
+                    fontSize: 10
+                  },
+                  horizontalAlignment: 'LEFT'
+                }
+              },
+              fields: 'userEnteredFormat'
+            }
+          }
+        ]
+      }
+    });
+
+    console.log('Power of 10 section updated in Google Sheets');
+  } catch (error) {
+    console.error('Error updating Power of 10 section:', error.message);
+    throw error;
+  }
+}
+
+/**
  * Test the Google Sheets connection
  */
 export async function testConnection() {
