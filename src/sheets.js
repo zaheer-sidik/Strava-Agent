@@ -107,6 +107,9 @@ export async function appendToSheet(values) {
 
     console.log(`Added row to Google Sheets: ${response.data.updatedRows} row(s) updated`);
     
+    // Reformat dashboard to ensure all formulas start from row 10
+    await reformatDashboard();
+    
     // Update dashboard stats after adding new activity
     await updateDashboard();
     
@@ -366,6 +369,40 @@ async function updateDashboard() {
     console.log('Dashboard refreshed');
   } catch (error) {
     console.error('Error updating dashboard:', error.message);
+  }
+}
+
+/**
+ * Reformat the dashboard so all formulas reference data starting from row 10
+ */
+async function reformatDashboard() {
+  try {
+    console.log('Reformatting dashboard to start from row 10...');
+    
+    // Update all formulas to ensure they reference data starting from row 10
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: 'Sheet1!A1:I9',
+      valueInputOption: 'USER_ENTERED',
+      requestBody: {
+        values: [
+          ['STRAVA DASHBOARD', '', '', '', '', '', '', '', ''],
+          ['Last Activity:', '=IF(COUNTA(B$10:B)>0,IF(TODAY()-B$10=0,"Today",IF(TODAY()-B$10=1,"Yesterday",TEXT(TODAY()-B$10,"0")&" days ago")),"No activities yet")', '', '', '', '', '', '', ''],
+          ['Week', '', '', 'Year', '', '', '', '', ''],
+          ['Activities:', '=COUNTIFS(B$10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1)', '', 'Activities:', '=COUNTIFS(B$10:B,">="&DATE(YEAR(TODAY()),1,1))', '', '', '', ''],
+          ['Distance:', '=SUMIF(B$10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1,G$10:G)', '', 'Distance:', '=SUMIF(B$10:B,">="&DATE(YEAR(TODAY()),1,1),G$10:G)', '', '', '', ''],
+          ['Time:', '=TEXT(SUMIF(B$10:B,">="&TODAY()-WEEKDAY(TODAY(),2)+1,H$10:H),"[h]:mm")', '', 'Time:', '=TEXT(SUMIF(B$10:B,">="&DATE(YEAR(TODAY()),1,1),H$10:H),"[h]:mm")', 'Races:', '=SUMPRODUCT((B$10:B>=DATE(YEAR(TODAY()),1,1))*(ISNUMBER(SEARCH("race",LOWER(D$10:D))))*1)', ''],
+          ['', '', '', '', '', '', '', '', ''],
+          ['', '', '', '', '', '', '', '', ''],
+          ['Day', 'Date', 'Time', 'Activity Title', 'Notes', 'Type', 'Distance', 'Duration', 'Activity ID'],
+        ],
+      },
+    });
+    
+    console.log('✓ Dashboard reformatted with formulas starting from row 10');
+  } catch (error) {
+    console.error('Error reformatting dashboard:', error.message);
+    throw error;
   }
 }
 
